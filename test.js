@@ -1,57 +1,72 @@
-Raphael.fn.connection = function (obj1, obj2, color, width) {
-    var bb1 = obj1.getBBox();
-    var bb2 = obj2.getBBox();
-    var p = [{x: bb1.x + bb1.width / 2, y: bb1.y - 1},
-             {x: bb1.x + bb1.width / 2, y: bb1.y + bb1.height + 1},
-             {x: bb1.x - 1, y: bb1.y + bb1.height / 2},
-             {x: bb1.x + bb1.width + 1, y: bb1.y + bb1.height / 2},
-             {x: bb2.x + bb2.width / 2, y: bb2.y - 1},
-             {x: bb2.x + bb2.width / 2, y: bb2.y + bb2.height + 1},
-             {x: bb2.x - 1, y: bb2.y + bb2.height / 2},
-             {x: bb2.x + bb2.width + 1, y: bb2.y + bb2.height / 2}];
-    var d = {};
-    var dis = [];
+function make_cross(obj) {
+    var bb1 = obj.getBBox();
+    return [{x: bb1.x + bb1.width / 2, y: bb1.y - 1},
+            {x: bb1.x + bb1.width / 2, y: bb1.y + bb1.height + 1},
+            {x: bb1.x - 1, y: bb1.y + bb1.height / 2},
+            {x: bb1.x + bb1.width + 1, y: bb1.y + bb1.height / 2}];
+}
+
+function calc_dir(obj1,obj2) {
+    var cross1 = make_cross(obj1);
+    var cross2 = make_cross(obj2);
     var min_v = null;
-    var res = [0,4];
+    var dir1 = 0;
+    var dir2 = 0;
     for (var i = 0; i < 4; i++) {
-        for (var j = 4; j < 8; j++) {
-            var dx = Math.abs(p[i].x - p[j].x);
-            var dy = Math.abs(p[i].y - p[j].y);
-            if ((i == j - 4) || 
-                (((i != 3 && j != 6) || p[i].x < p[j].x) && 
-                 ((i != 2 && j != 7) || p[i].x > p[j].x) && 
-                 ((i != 0 && j != 5) || p[i].y > p[j].y) && 
-                 ((i != 1 && j != 4) || p[i].y < p[j].y))) {
-                var current = dx + dy;
-                if (min_v === null || min_v > current) {
-                    min_v = current;
-                    res = [i,j];
+        var p1 = cross1[i];
+        for (var j = 0; j < 4; j++) {
+            var p2 = cross2[j];
+            var dx = Math.abs(p1.x - p2.x);
+            var dy = Math.abs(p2.y - p2.y);
+
+            if ((i == j ) || 
+                (((i != 3 && j != 2) || p1.x < p2.x) && 
+                 ((i != 2 && j != 3) || p1.x > p2.x) && 
+                 ((i != 0 && j != 1) || p1.y > p2.y) && 
+                 ((i != 1 && j != 0) || p1.y < p2.y))) {
+
+                if (min_v === null || min_v > dx + dy) {
+                    min_v = dx + dy;
+                    dir1 = i;
+                    dir2 = j;
                 }
             }
         }
     }
+    return [dir1,dir2];
+}
 
-    var x1 = p[res[0]].x;
-    var y1 = p[res[0]].y;
-    var x4 = p[res[1]].x;
-    var y4 = p[res[1]].y;
+function make_dirp(p,dir,dx,dy) {
+    return {x:[p.x, p.x, p.x - dx, p.x + dx][dir],
+            y:[p.y - dy, p.y + dy, p.y, p.y][dir]};
+}
 
-    var dx = Math.max(Math.abs(x1 - x4) / 2, 10);
-    var dy = Math.max(Math.abs(y1 - y4) / 2, 10);
-    var x2 = [x1, x1, x1 - dx, x1 + dx][res[0]];
-    var y2 = [y1 - dy, y1 + dy, y1, y1][res[0]];
-    var x3 = [0, 0, 0, 0, x4, x4, x4 - dx, x4 + dx][res[1]];
-    var y3 = [0, 0, 0, 0, y1 + dy, y1 - dy, y4, y4][res[1]];
-    var path_str = ["M", x1.toFixed(3), y1.toFixed(3), 
+Raphael.fn.connect = function(obj1,dir1,obj2,dir2,color,width) {
+    var p1 = (make_cross(obj1))[dir1];
+    var p2 = (make_cross(obj2))[dir2];
+
+    var dx = Math.max(Math.abs(p1.x - p2.x) / 2, 10);
+    var dy = Math.max(Math.abs(p1.y - p2.y) / 2, 10);
+
+    var d2 = make_dirp(p1,dir1,dx,dy);
+    var d3 = make_dirp(p2,dir2,dx,dy);
+    var path_str = ["M", 
+                    p1.x.toFixed(3), p1.y.toFixed(3), 
                     "C", 
-                    x2.toFixed(3), y2.toFixed(3), 
-                    x3.toFixed(3), y3.toFixed(3), 
-                    x4.toFixed(3), y4.toFixed(3)].join(",");
+                    d2.x.toFixed(3), d2.y.toFixed(3), 
+                    d3.x.toFixed(3), d3.y.toFixed(3), 
+                    p2.x.toFixed(3), p2.y.toFixed(3)].join(",");
     
     this.path(path_str).attr({stroke: color, 
                               fill: "none",
                               "stroke-width":width});
     return;
+}
+
+
+Raphael.fn.connection = function (obj1, obj2, color, width) {
+    var dir = calc_dir(obj1,obj2);
+    this.connect(obj1,dir[0],obj2,dir[1],color,width);
 };
 
 
@@ -68,6 +83,6 @@ Raphael.fn.connection = function (obj1, obj2, color, width) {
          var c2 = paper.circle(xx,yy,r);
          c2.attr({fill:color,stroke:color});
 
-         paper.connection(c1,c2,"#000",2);
+         paper.connect(c1,1,c2,0,"#000",2);
      }
-})()
+})();
