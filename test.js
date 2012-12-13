@@ -72,9 +72,13 @@ Raphael.fn.connection = function (obj1, obj2, color, width) {
 
 (function(){
      var div = document.getElementById("base");
-     var paper = Raphael(div, 300, 300);
+     var paper = Raphael(div, 300, 400);
 
      wire(100,100,200,200);
+     wire(100,100,150,200);
+     wire(100,100,120,200);
+     wire(100,100,250,300);
+
      function wire(x,y,xx,yy){
          var r = 8;
          var color = "#9F9";
